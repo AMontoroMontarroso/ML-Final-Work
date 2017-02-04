@@ -1,9 +1,37 @@
+# -*- coding: utf-8 -*-
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The goal of this script is recover demographic fields of the clients. Some features of the clients stay constant or change little along their appearances in the dataset, so we can consider them constant. We try recover them if they appear only some times in one cliente and in the rest of appearences are nan.
+
+We can see the number of variations of one feature in one client along the dataset.
+
+Feature            Diferents
+---------------  -----------
+ind_empleado               0
+pais_residencia          106
+ult_fec_cli_1t           168
+indrel_1mes             7021
+indresi                   96
+indext                   235
+conyuemp                   0
+canal_entrada           3704
+indfall                  487
+tipodom                  309
+cod_prov                4061
+nomprov                 3662
+renta                      0
+segment                25386
+
+So, for more than 14 millions of elements in the dataset, we can consider this features constant in one client in order to recovery some lost fields in his appearences.
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+
 import csv
 import datetime
 from string import strip
 from calendar import monthrange
 
-
+#Function tha calculate the difference in months between two dates.
 def monthdelta(d1, d2):
     delta = 0
     while True:
@@ -15,10 +43,12 @@ def monthdelta(d1, d2):
             break
     return delta
 
-
+#Open the train dataset
 f = open('./Data/train_ver2.csv')
 csv_f = csv.reader(f)
 headers = csv_f.next()
+
+#Create the dicts for count the number of differences for each client for each feature
 clientes_ind_empleado = dict()
 clientes_pais_residencia = dict()
 clientes_sexo = dict()
@@ -35,6 +65,7 @@ clientes_nomprov = dict()
 clientes_renta = dict()
 clientes_segment = dict()
 
+#Save the no null appeareances
 for c in csv_f:
     c = map(strip, c)
     if c[1] not in clientes_ind_empleado and c[2] != '' and c[2] != 'NA':
@@ -67,16 +98,20 @@ for c in csv_f:
         clientes_renta[c[1]] = c[22]
     if c[1] not in clientes_segment and c[23] != '' and c[23] != 'NA':
         clientes_segment[c[1]] = c[23]
-
+    
 f.close()
+
+#Reopen the dataset in order to recovery the lost fields
 f = open('./Data/train_ver2.csv')
 csv_f = csv.reader(f)
 headers = csv_f.next()
 
+#Open a new file to save the results
 fo = open('./Data/train_ver2_clean1.csv', 'w')
 csv_fo = csv.writer(fo)
-
 csv_fo.writerow(headers)
+
+#Recover the fields
 ind_empleado_recuperados = 0
 pais_residencia_recuperados = 0
 sexo_recuperados = 0
@@ -93,19 +128,19 @@ nomprov_recuperados = 0
 renta_recuperados = 0
 segment_recuperados = 0
 
+#Give the values saved and some default values
 for c in csv_f:
     c = map(strip, c)
     if c[1] in clientes_indresi and (c[2] == '' or c[2] == 'NA') and c[1] in clientes_pais_residencia and (c[3] == '' or c[3] == 'NA'):
-        #Para clientes que se dieron de baja volvieron a contratar. En su primer periodo como clientes se pierden datos de forma sistematica en todos aquellos con esta situacion. Vease 1054429 o 1363761. Se les pone como estaban activos.
-        c[7] = '0' #No se considera nuevo
-        c[9] = '1' #Primario
-        c[12] = 'I'#Dado que son los ultimos meses antes de darse de baja. Lo normal que es no sea activo
+        c[7] = '0' 
+        c[9] = '1' 
+        c[12] = 'I'
         c[21] = '0'
         if(c[1] in clientes_indrel_1mes):
-            if(clientes_indrel_1mes[c[1]] in ['3', '3.0']): #Si ex primario
-                c[11] = '1' #primario
+            if(clientes_indrel_1mes[c[1]] in ['3', '3.0']):
+                c[11] = '1' 
             else:
-                c[11] = '2' #Si ex copropietario enteonces propietario
+                c[11] = '2'
     if (c[2] == '' or c[2] == 'NA') and c[1] in clientes_ind_empleado:
         c[2] = clientes_ind_empleado[c[1]]
         ind_empleado_recuperados += 1
@@ -150,17 +185,18 @@ for c in csv_f:
     if (c[23] == '' or c[23] == 'NA') and c[1] in clientes_segment:
         c[23] = clientes_segment[c[1]]
         segment_recuperados += 1
-    if c[8] == 'NA' or c[8] == '': #Antiguedad
+    if c[8] == 'NA' or c[8] == '': 
         if(c[6] != 'NA' and c[6] != ''):
-            a = datetime.datetime.strptime(c[6], '%Y-%m-%d') #Fecha alta
-            b = datetime.datetime.strptime(c[0], '%Y-%m-%d') #Fecha datos
-            c[8] = monthdelta(a, b)#diferencia en meses
+            a = datetime.datetime.strptime(c[6], '%Y-%m-%d')
+            b = datetime.datetime.strptime(c[0], '%Y-%m-%d')
+            c[8] = monthdelta(a, b)
 
     csv_fo.writerow(c)
 
 f.close()
 fo.close()
 
+#Print the results
 from tabulate import tabulate
 
 features = ['ind_empleado', 'pais_residencia', 'sexo', 'age', 'fecha_alta', 'indresi', 'indext', 'conyuemp', 'canal_entrada', 'indfall', 'tipodom', 'nomprov', 'renta', 'segment']
