@@ -1,0 +1,16 @@
+Feature            Recovered
+---------------  -----------
+ind_empleado            1049
+pais_residencia         1049
+sexo                    1049
+age                     1049
+fecha_alta              1049
+indresi                 1049
+indext                  1049
+conyuemp                1051
+canal_entrada         127538
+indfall                 1049
+tipodom                 1050
+nomprov                 1735
+renta                    179
+segment               128916
